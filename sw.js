@@ -3,7 +3,7 @@
  * Bump CACHE_VERSION whenever a shell file changes; activate cleans up
  * any caches from older versions.
  */
-var CACHE_VERSION = 'v1';
+var CACHE_VERSION = 'v2';
 var CACHE_NAME = 'photoframe-shell-' + CACHE_VERSION;
 
 var SHELL_FILES = [
