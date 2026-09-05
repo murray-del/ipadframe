@@ -1,0 +1,227 @@
+/* Reset & iOS bounce/selection prevention */
+* {
+  box-sizing: border-box;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: #000;
+  touch-action: none;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: #f2f2f2;
+}
+
+.screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.screen.hidden {
+  display: none;
+}
+
+/* ---------- Settings screen ---------- */
+
+#settings-screen {
+  background: #111;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+.settings-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+h1 {
+  font-size: 28px;
+  font-weight: 600;
+  margin: 0 0 20px;
+}
+
+.panel {
+  background: #1b1b1b;
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+}
+
+.panel-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.quota-info {
+  font-size: 13px;
+  color: #9a9a9a;
+}
+
+.btn {
+  appearance: none;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 20px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: #2b6dee;
+  color: #fff;
+}
+
+.btn-primary:active {
+  background: #1f56c4;
+}
+
+.btn-start {
+  width: 100%;
+  margin-top: 8px;
+  background: #2bb673;
+  color: #fff;
+  padding: 16px;
+  font-size: 18px;
+}
+
+.btn-start:disabled {
+  background: #333;
+  color: #777;
+  cursor: not-allowed;
+}
+
+.btn-start:active:not(:disabled) {
+  background: #229a5f;
+}
+
+.import-progress {
+  margin-top: 12px;
+  font-size: 13px;
+  color: #9a9a9a;
+}
+
+.thumb-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.thumb {
+  position: relative;
+  width: 100%;
+  padding-top: 100%; /* square aspect ratio without CSS aspect-ratio (unsupported before Safari 15) */
+  border-radius: 8px;
+  overflow: hidden;
+  background: #000;
+}
+
+.thumb img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.thumb-delete {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.empty-msg {
+  color: #8a8a8a;
+  font-size: 14px;
+  text-align: center;
+  margin: 8px 0;
+}
+
+.empty-msg.hidden {
+  display: none;
+}
+
+.controls-panel .control-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.controls-panel .control-row:nth-of-type(2) {
+  border-bottom: none;
+}
+
+.control-row label {
+  font-size: 16px;
+}
+
+#interval-select {
+  background: #262626;
+  color: #f2f2f2;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 15px;
+}
+
+#shuffle-toggle {
+  width: 22px;
+  height: 22px;
+}
+
+/* ---------- Slideshow screen ---------- */
+
+#slideshow-screen {
+  background: #000;
+}
+
+.slide {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0;
+  transition: opacity 1.2s ease-in-out;
+}
+
+.slide.active {
+  opacity: 1;
+}

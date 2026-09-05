@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Photo Frame</title>
+
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icons/icon-180.png">
+<link rel="icon" href="./icons/icon-512.png">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Photo Frame">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#000000">
+
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+<div id="settings-screen" class="screen">
+  <div class="settings-inner">
+    <h1>Photo Frame</h1>
+
+    <section class="panel">
+      <div class="panel-row">
+        <button id="add-photos-btn" class="btn btn-primary" type="button">Add Photos</button>
+        <input id="file-input" type="file" accept="image/*" multiple hidden>
+        <span id="quota-info" class="quota-info"></span>
+      </div>
+      <div id="import-progress" class="import-progress" hidden></div>
+    </section>
+
+    <section class="panel">
+      <div id="thumb-grid" class="thumb-grid"></div>
+      <p id="empty-msg" class="empty-msg">No photos yet. Tap "Add Photos" to import from your library.</p>
+    </section>
+
+    <section class="panel controls-panel">
+      <div class="control-row">
+        <label for="interval-select">Interval</label>
+        <select id="interval-select">
+          <option value="5000">5 seconds</option>
+          <option value="30000" selected>30 seconds</option>
+          <option value="60000">1 minute</option>
+          <option value="300000">5 minutes</option>
+          <option value="900000">15 minutes</option>
+          <option value="3600000">1 hour</option>
+        </select>
+      </div>
+      <div class="control-row">
+        <label for="shuffle-toggle">Shuffle</label>
+        <input id="shuffle-toggle" type="checkbox">
+      </div>
+      <button id="start-btn" class="btn btn-start" type="button" disabled>Start Slideshow</button>
+    </section>
+  </div>
+</div>
+
+<div id="slideshow-screen" class="screen hidden">
+  <img id="slide-a" class="slide" alt="">
+  <img id="slide-b" class="slide" alt="">
+</div>
+
+<script src="./js/db.js"></script>
+<script src="./js/slideshow.js"></script>
+<script src="./js/app.js"></script>
+</body>
+</html>
