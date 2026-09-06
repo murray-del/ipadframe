@@ -254,6 +254,49 @@
     });
   }
 
+  // ---------- Fullscreen (hides the iOS status bar on iPadOS 16.4+) ----------
+
+  function requestFullscreenIfSupported() {
+    var el = document.documentElement;
+    var request = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (typeof request === 'function') {
+      try {
+        var result = request.call(el);
+        if (result && typeof result.catch === 'function') {
+          result.catch(function () {});
+        }
+      } catch (e) {
+        // Fullscreen API unsupported or blocked; the app still works,
+        // just with the translucent status bar showing.
+      }
+    }
+  }
+
+  function exitFullscreenIfActive() {
+    var isFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
+    if (!isFullscreen) {
+      return;
+    }
+    var exit = document.exitFullscreen || document.webkitExitFullscreen;
+    if (typeof exit === 'function') {
+      try {
+        var result = exit.call(document);
+        if (result && typeof result.catch === 'function') {
+          result.catch(function () {});
+        }
+      } catch (e) {}
+    }
+  }
+
+  function handleFullscreenChange() {
+    // Covers the case where the user exits fullscreen via a system
+    // gesture (e.g. swiping up) instead of tapping the slideshow.
+    var isFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
+    if (!isFullscreen) {
+      Slideshow.handleTap();
+    }
+  }
+
   // ---------- Screen switching ----------
 
   function showSettings() {
@@ -271,6 +314,9 @@
     if (photoMeta.length === 0) {
       return;
     }
+    // Must be called synchronously within the click handler to count
+    // as a user gesture.
+    requestFullscreenIfSupported();
     var settings = loadSettings();
     var photoIds = photoMeta.map(function (m) {
       return m.id;
@@ -305,8 +351,12 @@
     startBtn.addEventListener('click', handleStart);
 
     slideshowScreen.addEventListener('click', function () {
+      exitFullscreenIfActive();
       Slideshow.handleTap();
     });
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
   }
 
   function applySavedSettings() {
