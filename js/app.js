@@ -6,6 +6,8 @@
   var MAX_DIMENSION = 2048;
   var JPEG_QUALITY = 0.8;
   var SETTINGS_KEY = 'photoframe-settings';
+  var ACTIVE_KEY = 'photoframe-slideshow-active';
+  var LONG_PRESS_MS = 600;
 
   var settingsScreen, slideshowScreen;
   var addPhotosBtn, fileInput, quotaInfo, importProgress;
@@ -40,6 +42,30 @@
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     } catch (e) {
       // localStorage unavailable (private mode edge cases); ignore.
+    }
+  }
+
+  // Tracks whether a slideshow was left running, so that if iOS reclaims
+  // the backgrounded page after a long idle stretch and reloads it from
+  // scratch, we resume straight into the slideshow instead of stranding
+  // on the settings screen.
+  function markSlideshowActive() {
+    try {
+      localStorage.setItem(ACTIVE_KEY, '1');
+    } catch (e) {}
+  }
+
+  function clearSlideshowActive() {
+    try {
+      localStorage.removeItem(ACTIVE_KEY);
+    } catch (e) {}
+  }
+
+  function wasSlideshowActive() {
+    try {
+      return localStorage.getItem(ACTIVE_KEY) === '1';
+    } catch (e) {
+      return false;
     }
   }
 
@@ -293,13 +319,14 @@
     // gesture (e.g. swiping up) instead of tapping the slideshow.
     var isFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
     if (!isFullscreen) {
-      Slideshow.handleTap();
+      Slideshow.exit();
     }
   }
 
   // ---------- Screen switching ----------
 
   function showSettings() {
+    clearSlideshowActive();
     slideshowScreen.classList.add('hidden');
     settingsScreen.classList.remove('hidden');
     refreshQuota();
@@ -315,8 +342,10 @@
       return;
     }
     // Must be called synchronously within the click handler to count
-    // as a user gesture.
+    // as a user gesture. No-ops harmlessly when called during an
+    // automatic resume (no user gesture available then).
     requestFullscreenIfSupported();
+    markSlideshowActive();
     var settings = loadSettings();
     var photoIds = photoMeta.map(function (m) {
       return m.id;
@@ -328,6 +357,47 @@
       shuffle: settings.shuffle,
       onExit: showSettings
     });
+  }
+
+  // ---------- Slideshow touch/click: tap = next photo, long-press = exit ----------
+
+  var pressTimer = null;
+  var longPressTriggered = false;
+
+  function clearPressTimer() {
+    if (pressTimer) {
+      clearTimeout(pressTimer);
+      pressTimer = null;
+    }
+  }
+
+  function handlePressStart() {
+    longPressTriggered = false;
+    clearPressTimer();
+    pressTimer = setTimeout(function () {
+      longPressTriggered = true;
+      pressTimer = null;
+      exitFullscreenIfActive();
+      Slideshow.exit();
+    }, LONG_PRESS_MS);
+  }
+
+  function handlePressEnd(event) {
+    if (event && event.cancelable) {
+      // Suppress the synthetic mouse/click events iOS fires ~300ms after
+      // touchend, which would otherwise double-trigger the advance.
+      event.preventDefault();
+    }
+    if (pressTimer) {
+      clearPressTimer();
+      if (!longPressTriggered) {
+        Slideshow.advanceNow();
+      }
+    }
+  }
+
+  function handlePressCancel() {
+    clearPressTimer();
   }
 
   // ---------- Wiring ----------
@@ -350,10 +420,12 @@
 
     startBtn.addEventListener('click', handleStart);
 
-    slideshowScreen.addEventListener('click', function () {
-      exitFullscreenIfActive();
-      Slideshow.handleTap();
-    });
+    slideshowScreen.addEventListener('touchstart', handlePressStart);
+    slideshowScreen.addEventListener('touchend', handlePressEnd);
+    slideshowScreen.addEventListener('touchcancel', handlePressCancel);
+    slideshowScreen.addEventListener('mousedown', handlePressStart);
+    slideshowScreen.addEventListener('mouseup', handlePressEnd);
+    slideshowScreen.addEventListener('mouseleave', handlePressCancel);
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
@@ -391,7 +463,11 @@
     Slideshow.init();
     applySavedSettings();
     bindEvents();
-    refreshGrid();
+    refreshGrid().then(function () {
+      if (wasSlideshowActive() && photoMeta.length > 0) {
+        handleStart();
+      }
+    });
     requestPersistence();
     registerServiceWorker();
   }

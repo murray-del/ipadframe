@@ -12,6 +12,7 @@ var Slideshow = (function () {
   var intervalMs = 30000;
   var pending = null; // { id, objectURL, img } preloaded next photo
   var running = false;
+  var shuffleEnabled = false;
   var wakeLockSentinel = null;
   var onExit = null;
 
@@ -23,8 +24,13 @@ var Slideshow = (function () {
   }
 
   function shuffleArray(arr) {
-    for (var i = arr.length - 1; i > 0; i--) {
-      var j = Math.floor(Math.random() * (i + 1));
+    return shuffleRange(arr, 0);
+  }
+
+  // Fisher-Yates over arr[start..end], leaving indices before start untouched.
+  function shuffleRange(arr, start) {
+    for (var i = arr.length - 1; i > start; i--) {
+      var j = start + Math.floor(Math.random() * (i - start + 1));
       var tmp = arr[i];
       arr[i] = arr[j];
       arr[j] = tmp;
@@ -120,6 +126,14 @@ var Slideshow = (function () {
     var nextPos = (pos + 1) % order.length;
     var nextId = order[nextPos];
 
+    // Completed a full lap: reshuffle everything after this photo so the
+    // next lap isn't an exact repeat of the same order. Index nextPos
+    // (about to be shown) is left untouched, so there's no risk of it
+    // getting shuffled into an immediate repeat of itself.
+    if (nextPos === 0 && shuffleEnabled && order.length > 1) {
+      shuffleRange(order, 1);
+    }
+
     var readyPromise;
     if (pending && pending.id === nextId) {
       readyPromise = Promise.resolve(pending);
@@ -177,6 +191,16 @@ var Slideshow = (function () {
     }
   }
 
+  // Advances immediately (e.g. on a tap) and restarts the interval timer
+  // from now, so the auto-advance doesn't fire again right on its heels.
+  function advanceNow() {
+    if (!running || order.length <= 1) {
+      return;
+    }
+    advance();
+    scheduleTimer();
+  }
+
   // opts: { photoIds, interval, shuffle, onExit }
   function start(opts) {
     if (!layerA) {
@@ -184,7 +208,8 @@ var Slideshow = (function () {
     }
 
     order = opts.photoIds.slice();
-    if (opts.shuffle) {
+    shuffleEnabled = !!opts.shuffle;
+    if (shuffleEnabled) {
       shuffleArray(order);
     }
     intervalMs = opts.interval;
@@ -239,7 +264,7 @@ var Slideshow = (function () {
     pos = 0;
   }
 
-  function handleTap() {
+  function exit() {
     if (!running) {
       return;
     }
@@ -250,10 +275,21 @@ var Slideshow = (function () {
     }
   }
 
+  // Wake locks are auto-released whenever the document goes hidden (screen
+  // lock, app switch). Re-acquire it if we come back to the foreground
+  // still mid-slideshow, to minimize the chance of the screen — and
+  // eventually the whole page — getting suspended by iOS.
+  document.addEventListener('visibilitychange', function () {
+    if (running && document.visibilityState === 'visible' && !wakeLockSentinel) {
+      requestWakeLock();
+    }
+  });
+
   return {
     init: init,
     start: start,
     stop: stop,
-    handleTap: handleTap
+    advanceNow: advanceNow,
+    exit: exit
   };
 })();
